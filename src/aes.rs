@@ -77,7 +77,7 @@ impl Aes {
     }
 
     #[inline(always)]
-    pub fn set_key(key: &AesKey) {
+    pub fn set_key(&mut self, key: &AesKey) {
         for i in 0..key.len() {
             let k: u32 = key[i];
             let d: usize = AES_KEY_REGISTER_ADDR + (i * 4);
