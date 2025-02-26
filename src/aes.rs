@@ -48,7 +48,7 @@ impl Aes {
     }
 
     #[inline(always)]
-    pub fn decrypt_block(&mut self, in_block: AesBlock) -> Result<AesBlock, AesError> {
+    pub fn decrypt_block(&self, in_block: AesBlock) -> Result<AesBlock, AesError> {
         let mut out_block: AesBlock = [0, 0, 0, 0];
 
         if self._get_mode() != Type::DecExt {
@@ -77,7 +77,7 @@ impl Aes {
     }
 
     #[inline(always)]
-    pub fn set_key(&mut self, key: &AesKey) {
+    pub fn set_key(&self, key: &AesKey) {
         for i in 0..key.len() {
             let k: u32 = key[i];
             let d: usize = AES_KEY_REGISTER_ADDR + (i * 4);
@@ -89,49 +89,49 @@ impl Aes {
 
     #[doc(hidden)]
     #[inline(always)]
-    fn _set_in_fifo(&mut self, subblock: AesSubBlock) {
+    fn _set_in_fifo(&self, subblock: AesSubBlock) {
         self.aes.fifo().write(|w| unsafe { w.bits(subblock) });
     }
 
     #[doc(hidden)]
     #[inline(always)]
-    fn _get_out_fifo(&mut self) -> AesSubBlock {
+    fn _get_out_fifo(&self) -> AesSubBlock {
         self.aes.fifo().read().bits()
     }
 
     #[doc(hidden)]
     #[inline(always)]
-    fn _wait(&mut self) {
+    fn _wait(&self) {
         while self._is_busy() {}
     }
 
     #[doc(hidden)]
     #[inline(always)]
-    fn _is_busy(&mut self) -> bool {
+    fn _is_busy(&self) -> bool {
         self.aes.status().read().busy().bit_is_set()
     }
 
     #[doc(hidden)]
     #[inline(always)]
-    fn _in_fifo_empty(&mut self) -> bool {
+    fn _in_fifo_empty(&self) -> bool {
         self.aes.status().read().input_em().bit_is_set()
     }
 
     #[doc(hidden)]
     #[inline(always)]
-    fn _out_fifo_full(&mut self) -> bool {
+    fn _out_fifo_full(&self) -> bool {
         self.aes.status().read().output_full().bit_is_set()
     }
 
     #[doc(hidden)]
     #[inline(always)]
-    fn _get_key_size(&mut self) -> KeySize {
+    fn _get_key_size(&self) -> KeySize {
         self.aes.ctrl().read().key_size().variant().unwrap()
     }
 
     #[doc(hidden)]
     #[inline(always)]
-    fn _get_mode(&mut self) -> Type {
+    fn _get_mode(&self) -> Type {
         self.aes.ctrl().read().type_().variant().unwrap()
     }
 
