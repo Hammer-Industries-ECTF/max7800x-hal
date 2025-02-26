@@ -7,7 +7,7 @@ use crate::pac::aes::ctrl::{KeySize, Type};
 /// Address of the AES key registers in memory.
 pub const AES_KEY_REGISTER_ADDR: usize = 0x4000_7800;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum AesError {
     NotEmpty,
     Misconfigured,
