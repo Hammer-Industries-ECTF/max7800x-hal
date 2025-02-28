@@ -19,3 +19,4 @@ pub mod gpio;
 pub mod icc;
 pub mod trng;
 pub mod uart;
+pub mod wdt;
