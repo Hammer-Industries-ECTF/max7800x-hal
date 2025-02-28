@@ -51,7 +51,38 @@ impl Aes {
     pub fn decrypt_block(&self, in_block: AesBlock) -> Result<AesBlock, AesError> {
         let mut out_block: AesBlock = [0, 0, 0, 0];
 
+        self.aes.ctrl().write(|w| w.type_().variant(Type::DecExt));
         if self._get_mode() != Type::DecExt {
+            return Err(AesError::Misconfigured)
+        }
+
+        if self._get_key_size() != KeySize::Aes256 {
+            return Err(AesError::Misconfigured)
+        }
+
+        if !self._in_fifo_empty() {
+            return Err(AesError::NotEmpty)
+        }
+
+        for subblock in in_block {
+            self._set_in_fifo(subblock);
+        }
+
+        self._wait();
+
+        for bidx in 0..out_block.len() {
+            out_block[bidx] = self._get_out_fifo();
+        }
+
+        Ok(out_block)
+    }
+
+    #[inline(always)]
+    pub fn encrypt_block(&self, in_block: AesBlock) -> Result<AesBlock, AesError> {
+        let mut out_block: AesBlock = [0, 0, 0, 0];
+
+        self.aes.ctrl().write(|w| w.type_().variant(Type::EncExt));
+        if self._get_mode() != Type::EncExt {
             return Err(AesError::Misconfigured)
         }
 
