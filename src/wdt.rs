@@ -58,15 +58,15 @@ impl Wdt0 {
     }
 
     /// Give Cupcake his treat :D
+    #[inline(always)]
     pub fn feed(&self) {
         // Ask cupcake to not bite of your hand while you give him his treat
         interrupt::free(|cs| feed_sequence(&self.wdt, cs));
     }
-
-
 }
 
 /// Internal feed sequence that only runs when Cupkake promises he wont bite off your hand
+#[inline(always)]
 fn feed_sequence(wdt: &crate::pac::Wdt0, _cs: &interrupt::CriticalSection) {
     wdt.rst().write(|w| unsafe {
         w.bits(0xA5);
