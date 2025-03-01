@@ -112,10 +112,7 @@ impl Aes {
     #[inline(always)]
     pub fn set_key(&self, key: &AesKey) {
         self._wait();
-        self.aes.ctrl().write(|w| w.en().clear_bit());
-        self._wait();
         self._flush();
-
         self.aes.ctrl().write(|w| w.key_size().aes256());
         unsafe {
             for i in 0..256 {
@@ -123,10 +120,7 @@ impl Aes {
             }
             core::ptr::copy_nonoverlapping::<u8>(key.as_ptr(), AES_KEY_REGISTER_ADDR as *mut u8, key.len());    
         }
-        
         self.aes.ctrl().write(|w| w.key_size().aes256());
-        self.aes.ctrl().write(|w| w.en().set_bit());
-        self._wait();
     }
 
     /// Sets mode for AES256
