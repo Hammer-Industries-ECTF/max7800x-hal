@@ -43,15 +43,16 @@ impl Aes {
 
             return w;
         });
+        while aes.status().read().busy().bit_is_set() {};
 
         Self { aes }
     }
 
+    /// Decrypts block with AES256
     #[inline(always)]
     pub fn decrypt_block(&self, in_block: AesBlock) -> Result<AesBlock, AesError> {
         let mut out_block: AesBlock = [0, 0, 0, 0];
 
-        self.aes.ctrl().write(|w| w.type_().variant(Type::DecExt));
         if self._get_mode() != Type::DecExt {
             return Err(AesError::Misconfigured)
         }
@@ -77,11 +78,11 @@ impl Aes {
         Ok(out_block)
     }
 
+    /// Encrypts block with AES256
     #[inline(always)]
     pub fn encrypt_block(&self, in_block: AesBlock) -> Result<AesBlock, AesError> {
         let mut out_block: AesBlock = [0, 0, 0, 0];
 
-        self.aes.ctrl().write(|w| w.type_().variant(Type::EncExt));
         if self._get_mode() != Type::EncExt {
             return Err(AesError::Misconfigured)
         }
@@ -107,6 +108,7 @@ impl Aes {
         Ok(out_block)
     }
 
+    /// Sets key for AES256
     #[inline(always)]
     pub fn set_key(&self, key: &AesKey) {
         for i in 0..key.len() {
@@ -116,6 +118,25 @@ impl Aes {
                 core::ptr::write_volatile::<u32>((d) as *mut u32, k);
             }
         }
+    }
+
+    /// Sets mode for AES256
+    #[inline(always)]
+    pub fn set_mode(&self, mode: Type) {
+        self.aes.ctrl().write(|w| w.en().clear_bit());
+        self._wait();
+        self.aes.ctrl().write(|w| {
+            w.type_().variant(mode);
+            w.key_size().aes256();
+            w.input_flush().set_bit();
+            w.output_flush().set_bit();
+            w.dma_rx_en().clear_bit();
+            w.dma_tx_en().clear_bit();
+            w.en().set_bit();
+
+            return w;
+        });
+        self._wait();
     }
 
     #[doc(hidden)]
