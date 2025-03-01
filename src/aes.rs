@@ -116,6 +116,7 @@ impl Aes {
         self._wait();
         self._flush();
 
+        self.aes.ctrl().write(|w| w.key_size().aes256());
         unsafe {
             for i in 0..256 {
                 core::ptr::write_volatile::<u32>((AES_KEY_REGISTER_ADDR + (i * 4)) as *mut u32, 0u32);
@@ -123,6 +124,7 @@ impl Aes {
             core::ptr::copy_nonoverlapping::<u8>(key.as_ptr(), AES_KEY_REGISTER_ADDR as *mut u8, key.len());    
         }
         
+        self.aes.ctrl().write(|w| w.key_size().aes256());
         self.aes.ctrl().write(|w| w.en().set_bit());
         self._wait();
     }
