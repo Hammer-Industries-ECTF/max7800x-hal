@@ -15,7 +15,7 @@ pub enum AesError {
 
 pub type AesSubBlock = u32;
 pub type AesBlock = [AesSubBlock; 4];
-pub type AesKey = [u32; 8];
+pub type AesKey = [u8; 32];
 
 pub struct Aes {
     aes: crate::pac::Aes,
@@ -111,13 +111,20 @@ impl Aes {
     /// Sets key for AES256
     #[inline(always)]
     pub fn set_key(&self, key: &AesKey) {
-        for i in 0..key.len() {
-            let k: u32 = key[i];
-            let d: usize = AES_KEY_REGISTER_ADDR + (i * 4);
-            unsafe {
-                core::ptr::write_volatile::<u32>((d) as *mut u32, k);
+        self._wait();
+        self.aes.ctrl().write(|w| w.en().clear_bit());
+        self._wait();
+        self._flush();
+
+        unsafe {
+            for i in 0..256 {
+                core::ptr::write_volatile::<u32>((AES_KEY_REGISTER_ADDR + (i * 4)) as *mut u32, 0u32);
             }
+            core::ptr::copy_nonoverlapping::<u8>(key.as_ptr(), AES_KEY_REGISTER_ADDR as *mut u8, key.len());    
         }
+        
+        self.aes.ctrl().write(|w| w.en().set_bit());
+        self._wait();
     }
 
     /// Sets mode for AES256
@@ -171,6 +178,12 @@ impl Aes {
 
     #[doc(hidden)]
     #[inline(always)]
+    fn _out_fifo_empty(&self) -> bool {
+        self.aes.status().read().output_em().bit_is_set()
+    }
+
+    #[doc(hidden)]
+    #[inline(always)]
     fn _out_fifo_full(&self) -> bool {
         self.aes.status().read().output_full().bit_is_set()
     }
@@ -186,5 +199,18 @@ impl Aes {
     fn _get_mode(&self) -> Type {
         self.aes.ctrl().read().type_().variant().unwrap()
     }
+
+    #[doc(hidden)]
+    #[inline(always)]
+    fn _flush(&self) {
+        if !self._in_fifo_empty() {
+            self.aes.ctrl().write(|w| w.input_flush().set_bit());
+        }
+        if !self._out_fifo_empty() {
+            self.aes.ctrl().write(|w| w.output_flush().set_bit());
+        }
+        self._wait();
+    }
+
 
 }
