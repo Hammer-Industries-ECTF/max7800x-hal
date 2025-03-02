@@ -105,24 +105,24 @@ impl Aes {
             core::ptr::copy_nonoverlapping::<u8>(key.as_ptr(), AES_KEY_REGISTER_ADDR as *mut u8, key.len());    
         }
 
-        self.aes.ctrl().write(|w| w.en().clear_bit());
+        self.aes.ctrl().modify(|_, w| w.en().clear_bit());
         self._flush();
 
-        self.aes.ctrl().write(|w| {
+        self.aes.ctrl().modify(|_, w| {
             w.key_size().aes256();
             w.type_().variant(Type::DecExt);
             return w;
         });
 
-        self.aes.ctrl().write(|w| w.en().set_bit());
+        self.aes.ctrl().modify(|_, w| w.en().set_bit());
     }
 
     /// Sets mode for AES256
     #[inline(always)]
     pub fn set_mode(&self, mode: Type) {
-        self.aes.ctrl().write(|w| w.en().clear_bit());
+        self.aes.ctrl().modify(|_, w| w.en().clear_bit());
         self._wait();
-        self.aes.ctrl().write(|w| {
+        self.aes.ctrl().modify(|_, w| {
             w.type_().variant(mode);
             w.key_size().aes256();
             w.input_flush().set_bit();
@@ -139,7 +139,7 @@ impl Aes {
     #[doc(hidden)]
     #[inline(always)]
     fn _set_in_fifo(&self, subblock: AesSubBlock) {
-        self.aes.fifo().write(|w| unsafe { w.bits(subblock) });
+        self.aes.fifo().modify(|_, w| unsafe { w.bits(subblock) });
     }
 
     #[doc(hidden)]
@@ -194,10 +194,10 @@ impl Aes {
     #[inline(always)]
     fn _flush(&self) {
         if !self._in_fifo_empty() {
-            self.aes.ctrl().write(|w| w.input_flush().set_bit());
+            self.aes.ctrl().modify(|_, w| w.input_flush().set_bit());
         }
         if !self._out_fifo_empty() {
-            self.aes.ctrl().write(|w| w.output_flush().set_bit());
+            self.aes.ctrl().modify(|_, w| w.output_flush().set_bit());
         }
         self._wait();
     }
