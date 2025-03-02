@@ -32,19 +32,6 @@ impl Aes {
             aes.enable_clock(&mut reg.gcr);
         }
 
-        aes.ctrl().write(|w| {
-            w.type_().variant(Type::DecExt);
-            w.key_size().aes256();
-            w.input_flush().set_bit();
-            w.output_flush().set_bit();
-            w.dma_rx_en().clear_bit();
-            w.dma_tx_en().clear_bit();
-            w.en().set_bit();
-
-            return w;
-        });
-        while aes.status().read().busy().bit_is_set() {};
-
         Self { aes }
     }
 
@@ -112,15 +99,28 @@ impl Aes {
     #[inline(always)]
     pub fn set_key(&self, key: &AesKey) {
         self._wait();
-        self._flush();
-        self.aes.ctrl().write(|w| w.key_size().aes256());
         unsafe {
             for i in 0..256 {
                 core::ptr::write_volatile::<u32>((AES_KEY_REGISTER_ADDR + (i * 4)) as *mut u32, 0u32);
             }
             core::ptr::copy_nonoverlapping::<u8>(key.as_ptr(), AES_KEY_REGISTER_ADDR as *mut u8, key.len());    
         }
-        self.aes.ctrl().write(|w| w.key_size().aes256());
+
+        self.aes.ctrl().write(|w| w.en().clear_bit());
+        self._flush();
+
+        self.aes.ctrl().write(|w| {
+            w.type_().variant(Type::DecExt);
+            w.key_size().aes256();
+            w.input_flush().set_bit();
+            w.output_flush().set_bit();
+            w.dma_rx_en().clear_bit();
+            w.dma_tx_en().clear_bit();
+            return w;
+        });
+
+        self.aes.ctrl().write(|w| w.en().set_bit());
+        self._wait();
     }
 
     /// Sets mode for AES256
