@@ -40,17 +40,17 @@ impl Aes {
     pub fn decrypt_block(&self, in_block: AesBlock) -> Result<AesBlock, AesError> {
         let mut out_block: AesBlock = [0, 0, 0, 0];
 
-        if self._get_mode() != Type::DecExt {
-            return Err(AesError::Misconfigured)
-        }
+        // if self._get_mode() != Type::DecExt {
+        //     return Err(AesError::Misconfigured)
+        // }
 
-        if self._get_key_size() != KeySize::Aes256 {
-            return Err(AesError::Misconfigured)
-        }
+        // if self._get_key_size() != KeySize::Aes256 {
+        //     return Err(AesError::Misconfigured)
+        // }
 
-        if !self._in_fifo_empty() {
-            return Err(AesError::NotEmpty)
-        }
+        // if !self._in_fifo_empty() {
+        //     return Err(AesError::NotEmpty)
+        // }
 
         for subblock in in_block {
             self._set_in_fifo(subblock);
@@ -98,7 +98,6 @@ impl Aes {
     /// Sets key for AES256
     #[inline(always)]
     pub fn set_key(&self, key: &AesKey) {
-        self._wait();
         unsafe {
             for i in 0..256 {
                 core::ptr::write_volatile::<u32>((AES_KEY_REGISTER_ADDR + (i * 4)) as *mut u32, 0u32);
@@ -110,17 +109,12 @@ impl Aes {
         self._flush();
 
         self.aes.ctrl().write(|w| {
-            w.type_().variant(Type::DecExt);
             w.key_size().aes256();
-            w.input_flush().set_bit();
-            w.output_flush().set_bit();
-            w.dma_rx_en().clear_bit();
-            w.dma_tx_en().clear_bit();
+            w.type_().variant(Type::DecExt);
             return w;
         });
 
         self.aes.ctrl().write(|w| w.en().set_bit());
-        self._wait();
     }
 
     /// Sets mode for AES256
