@@ -14,8 +14,8 @@ pub enum AesError {
     Misconfigured,
 }
 
-pub type AesSubBlock = u32;
-pub type AesBlock = [AesSubBlock; 4];
+pub type AesSubBlock = u8;
+pub type AesBlock = [AesSubBlock; 16];
 pub type AesKey = [u8; 32];
 
 pub struct Aes {
@@ -39,37 +39,40 @@ impl Aes {
     /// Decrypts block with AES256
     #[inline(always)]
     pub fn decrypt_block(&self, in_block: AesBlock) -> Result<AesBlock, AesError> {
-        let mut out_block: AesBlock = [0, 0, 0, 0];
+        let in_block_32: [u32; 4] = convert_u8_to_u32_array(in_block);
+        let mut out_block_32: [u32; 4] = [0u32; 4];
 
-        // if self._get_mode() != Type::DecExt {
-        //     return Err(AesError::Misconfigured)
-        // }
+        if self._get_mode() != Type::EncExt {
+            return Err(AesError::Misconfigured)
+        }
 
-        // if self._get_key_size() != KeySize::Aes256 {
-        //     return Err(AesError::Misconfigured)
-        // }
+        if self._get_key_size() != KeySize::Aes256 {
+            return Err(AesError::Misconfigured)
+        }
 
-        // if !self._in_fifo_empty() {
-        //     return Err(AesError::NotEmpty)
-        // }
+        if !self._in_fifo_empty() {
+            return Err(AesError::NotEmpty)
+        }
 
-        for subblock in in_block {
+        for subblock in in_block_32 {
             self._set_in_fifo(subblock);
         }
 
         self._wait();
 
-        for bidx in 0..out_block.len() {
-            out_block[bidx] = self._get_out_fifo();
+        for bidx in 0..out_block_32.len() {
+            out_block_32[bidx] = self._get_out_fifo();
         }
 
+        let out_block: [u8; 16] = convert_u32_to_u8_array(out_block_32);
         Ok(out_block)
     }
 
     /// Encrypts block with AES256
     #[inline(always)]
     pub fn encrypt_block(&self, in_block: AesBlock) -> Result<AesBlock, AesError> {
-        let mut out_block: AesBlock = [0, 0, 0, 0];
+        let in_block_32: [u32; 4] = convert_u8_to_u32_array(in_block);
+        let mut out_block_32: [u32; 4] = [0u32; 4];
 
         if self._get_mode() != Type::DecExt {
             return Err(AesError::Misconfigured)
@@ -83,16 +86,17 @@ impl Aes {
             return Err(AesError::NotEmpty)
         }
 
-        for subblock in in_block {
+        for subblock in in_block_32 {
             self._set_in_fifo(subblock);
         }
 
         self._wait();
 
-        for bidx in 0..out_block.len() {
-            out_block[bidx] = self._get_out_fifo();
+        for bidx in 0..out_block_32.len() {
+            out_block_32[bidx] = self._get_out_fifo();
         }
 
+        let out_block: [u8; 16] = convert_u32_to_u8_array(out_block_32);
         Ok(out_block)
     }
 
@@ -139,13 +143,13 @@ impl Aes {
 
     #[doc(hidden)]
     #[inline(always)]
-    fn _set_in_fifo(&self, subblock: AesSubBlock) {
+    fn _set_in_fifo(&self, subblock: u32) {
         self.aes.fifo().modify(|_, w| unsafe { w.bits(subblock) });
     }
 
     #[doc(hidden)]
     #[inline(always)]
-    fn _get_out_fifo(&self) -> AesSubBlock {
+    fn _get_out_fifo(&self) -> u32 {
         self.aes.fifo().read().bits()
     }
 
@@ -202,6 +206,14 @@ impl Aes {
         }
         self._wait();
     }
+}
 
+fn convert_u8_to_u32_array(bytes: [u8; 16]) -> [u32; 4] {
+    use core::mem::transmute;
+    unsafe { transmute(bytes) }
+}
 
+fn convert_u32_to_u8_array(bytes: [u32; 4]) -> [u8; 16] {
+    use core::mem::transmute;
+    unsafe { transmute(bytes) }
 }
