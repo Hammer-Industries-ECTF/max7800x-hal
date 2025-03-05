@@ -1,6 +1,7 @@
 //! # Advanced Encryption Standard (AES)
 //!
 //! The AES is a hardware module that accelerates decryption (and encryption)
+//! AntiAES configured
 
 use crate::pac::aes::ctrl::{KeySize, Type};
 
@@ -70,7 +71,7 @@ impl Aes {
     pub fn encrypt_block(&self, in_block: AesBlock) -> Result<AesBlock, AesError> {
         let mut out_block: AesBlock = [0, 0, 0, 0];
 
-        if self._get_mode() != Type::EncExt {
+        if self._get_mode() != Type::DecExt {
             return Err(AesError::Misconfigured)
         }
 
@@ -110,7 +111,7 @@ impl Aes {
 
         self.aes.ctrl().modify(|_, w| {
             w.key_size().aes256();
-            w.type_().variant(Type::DecExt);
+            w.type_().variant(Type::EncExt);
             return w;
         });
 
