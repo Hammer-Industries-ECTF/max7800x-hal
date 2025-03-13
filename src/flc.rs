@@ -275,6 +275,19 @@ impl Flc {
         self._write_128(addr_128, &prev_data)
     }
 
+    pub fn read_struct<T>(&self, address: u32) -> Result<T, FlashError> {
+        // Target address must be sizeof aligned
+        if address % (size_of::<T>() as u32) != 0 {
+            return Err(FlashError::InvalidAddress);
+        }
+        self.check_address(address)?;
+        let addr_ptr = address as *const T;
+        // Safety: We have checked the address already
+        unsafe {
+            Ok(core::ptr::read_volatile::<T>(addr_ptr))
+        }
+    }
+
     /// Reads four [`u32`] from flash memory. Uses little-endian byte order.
     /// The lowest [`u32`] in the array is read from the lowest address in flash.
     /// The target address must be 128-bit aligned.
