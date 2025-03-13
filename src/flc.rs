@@ -219,6 +219,32 @@ impl Flc {
         Ok(())
     }
 
+    /// Writes an slice of u32 to u32 alligned address
+    pub fn write_u32_slice(&self, address: u32, data: &[u32]) -> Result<(), FlashError> {
+        // Target address must be sizeof aligned
+        if address & !0b11 != 0 {
+            return Err(FlashError::InvalidAddress);
+        }
+
+        let start_addr: u32 = address;
+        self.check_address(start_addr)?;
+
+        let end_addr: u32 = address + (data.len() as u32) - 1;
+        self.check_address(end_addr)?;
+
+        for (d_idx, data) in data.iter().enumerate() {
+            let offset: u32 = (size_of::<u32>() * d_idx) as u32;
+            let _ = match self.write_32(start_addr + offset, *data) {
+                Ok(()) => {},
+                Err(e) => {
+                    return Err(e);
+                } 
+            };
+        }
+
+        Ok(())
+    }
+
     /// Writes four [`u32`] to flash memory. Uses little-endian byte order.
     /// The lowest [`u32`] in the array is written to the lowest address in flash.
     /// The target address must be 128-bit aligned.
@@ -275,7 +301,7 @@ impl Flc {
         self._write_128(addr_128, &prev_data)
     }
 
-    pub fn read_struct<T>(&self, address: u32) -> Result<T, FlashError> {
+    pub fn read_t<T>(&self, address: u32) -> Result<T, FlashError> {
         // Target address must be sizeof aligned
         if address % (size_of::<T>() as u32) != 0 {
             return Err(FlashError::InvalidAddress);
