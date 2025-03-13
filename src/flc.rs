@@ -13,7 +13,7 @@ pub const FLASH_PAGE_COUNT: u32 = 64;
 pub const FLASH_PAGE_SIZE: u32 = 0x2000;
 
 /// Flash controller errors.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum FlashError {
     /// The target address to write or erase is invalid.
     InvalidAddress,
