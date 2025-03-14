@@ -303,7 +303,7 @@ impl Flc {
 
     pub fn read_t<T>(&self, address: u32) -> Result<T, FlashError> {
         // Target address must be sizeof aligned
-        if address % (size_of::<T>() as u32) != 0 {
+        if address % (align_of::<T>() as u32) != 0 {
             return Err(FlashError::InvalidAddress);
         }
         self.check_address(address)?;
