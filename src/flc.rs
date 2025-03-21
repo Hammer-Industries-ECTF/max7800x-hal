@@ -222,7 +222,7 @@ impl Flc {
     /// Writes an slice of u32 to u32 alligned address
     pub fn write_u32_slice(&self, address: u32, data: &[u32]) -> Result<(), FlashError> {
         // Target address must be sizeof aligned
-        if address & !0b11 != 0 {
+        if address & 0b11 != 0 {
             return Err(FlashError::InvalidAddress);
         }
 
