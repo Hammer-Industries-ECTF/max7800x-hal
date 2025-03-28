@@ -16,7 +16,7 @@ pub const FLASH_PAGE_SIZE: u32 = 0x2000;
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum FlashError {
     /// The target address to write or erase is invalid.
-    InvalidAddress,
+    InvalidAddress(u32),
     /// The flash controller was busy or locked when attempting to write or erase.
     AccessViolation,
     /// Writing over the old data with new data would cause 0 -> 1 bit transitions.
@@ -95,7 +95,7 @@ impl Flc {
     #[inline]
     pub fn check_address(&self, address: u32) -> Result<(), FlashError> {
         if address < FLASH_BASE || address >= FLASH_END {
-            return Err(FlashError::InvalidAddress);
+            return Err(FlashError::InvalidAddress(address));
         }
         Ok(())
     }
@@ -107,7 +107,7 @@ impl Flc {
         let page_num = (address >> 13) & (FLASH_PAGE_COUNT - 1);
         // Check for invalid page number (redundant check)
         if page_num >= FLASH_PAGE_COUNT {
-            return Err(FlashError::InvalidAddress);
+            return Err(FlashError::InvalidAddress(address));
         }
         Ok(page_num)
     }
@@ -165,7 +165,7 @@ impl Flc {
     fn _write_128(&self, address: u32, data: &[u32; 4]) -> Result<(), FlashError> {
         // Target address must be 128-bit aligned
         if address & 0b1111 != 0 {
-            return Err(FlashError::InvalidAddress);
+            return Err(FlashError::InvalidAddress(address));
         }
         self.check_address(address)?;
         // Ensure that the flash controller is configured
@@ -223,7 +223,7 @@ impl Flc {
     pub fn write_u32_slice(&self, address: u32, data: &[u32]) -> Result<(), FlashError> {
         // Target address must be sizeof aligned
         if address & 0b11 != 0 {
-            return Err(FlashError::InvalidAddress);
+            return Err(FlashError::InvalidAddress(address));
         }
 
         let start_addr: u32 = address;
@@ -278,7 +278,7 @@ impl Flc {
     pub fn write_32(&self, address: u32, data: u32) -> Result<(), FlashError> {
         // Target address must be 32-bit aligned
         if address & 0b11 != 0 {
-            return Err(FlashError::InvalidAddress);
+            return Err(FlashError::InvalidAddress(address));
         }
         self.check_address(address)?;
         let addr_128 = address & !0b1111;
@@ -304,7 +304,7 @@ impl Flc {
     pub fn read_t<T>(&self, address: u32) -> Result<T, FlashError> {
         // Target address must be sizeof aligned
         if address % (align_of::<T>() as u32) != 0 {
-            return Err(FlashError::InvalidAddress);
+            return Err(FlashError::InvalidAddress(address));
         }
         self.check_address(address)?;
         let addr_ptr = address as *const T;
@@ -320,7 +320,7 @@ impl Flc {
     pub fn read_128(&self, address: u32) -> Result<[u32; 4], FlashError> {
         // Target address must be 128-bit aligned
         if address & 0b1111 != 0 {
-            return Err(FlashError::InvalidAddress);
+            return Err(FlashError::InvalidAddress(address));
         }
         self.check_address(address)?;
         let addr_128_ptr = address as *const u32;
@@ -340,7 +340,7 @@ impl Flc {
     pub fn read_32(&self, address: u32) -> Result<u32, FlashError> {
         // Target address must be 32-bit aligned
         if address & 0b11 != 0 {
-            return Err(FlashError::InvalidAddress);
+            return Err(FlashError::InvalidAddress(address));
         }
         self.check_address(address)?;
         let addr_32_ptr = address as *const u32;
